@@ -72,4 +72,13 @@ class DatabaseService {
     final result = await db.rawQuery('SELECT COUNT(*) as count FROM tasks WHERE status = 0');
     return Sqflite.firstIntValue(result) ?? 0;
   }
+
+  // Debug: print DB path to console so you can pull it with adb
+  Future<String> getDbPath() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'task_manager.db');
+    // ignore: avoid_print
+    print('[DB PATH] $path');
+    return path;
+  }
 }

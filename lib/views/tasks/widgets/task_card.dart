@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/app_colors.dart';
 import '../../../models/task_model.dart';
 
-class TaskCard extends StatelessWidget {
+class TaskCard extends StatefulWidget {
   final TaskModel task;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
@@ -15,116 +16,274 @@ class TaskCard extends StatelessWidget {
   });
 
   @override
+  State<TaskCard> createState() => _TaskCardState();
+}
+
+class _TaskCardState extends State<TaskCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bounceCtrl;
+  late Animation<double> _bounceAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounceCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _bounceAnim = TweenSequence([
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.35), weight: 40),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.35, end: 0.9), weight: 30),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.9, end: 1.0), weight: 30),
+    ]).animate(CurvedAnimation(parent: _bounceCtrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _bounceCtrl.dispose();
+    super.dispose();
+  }
+
+  void _handleToggle() {
+    HapticFeedback.lightImpact();
+    _bounceCtrl.forward(from: 0);
+    widget.onToggle();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isCompleted = task.isCompleted;
+    final isCompleted = widget.task.isCompleted;
     final accentColor = isCompleted ? AppColors.success : AppColors.warning;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
+    return Dismissible(
+      key: ValueKey(widget.task.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border(left: BorderSide(color: accentColor, width: 5)),
-          color: isCompleted ? Colors.grey.shade50 : Colors.white,
+          gradient: const LinearGradient(
+            colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+          ),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Checkbox(
-                value: isCompleted,
-                onChanged: (_) => onToggle(),
-                activeColor: AppColors.success,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.delete_rounded, color: Colors.white, size: 28),
+            SizedBox(height: 4),
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: isCompleted ? AppColors.textSecondary : AppColors.textPrimary,
-                        decoration: isCompleted ? TextDecoration.lineThrough : null,
+            ),
+          ],
+        ),
+      ),
+      confirmDismiss: (_) => _confirmDelete(context),
+      onDismissed: (_) => widget.onDelete(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isCompleted ? const Color(0xFFF8FAFC) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withValues(alpha: isCompleted ? 0.08 : 0.14),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: accentColor, width: 5),
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 14, 8, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Bouncy custom checkbox
+                ScaleTransition(
+                  scale: _bounceAnim,
+                  child: GestureDetector(
+                    onTap: _handleToggle,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 280),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        gradient: isCompleted
+                            ? const LinearGradient(
+                                colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: isCompleted ? null : Colors.transparent,
+                        border: Border.all(
+                          color: isCompleted
+                              ? AppColors.success
+                              : Colors.grey.shade400,
+                          width: 2.2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: isCompleted
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.success.withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
                       ),
+                      child: isCompleted
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            )
+                          : null,
                     ),
-                    if (task.description.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        task.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Task content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 280),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isCompleted
+                              ? Colors.grey.shade400
+                              : AppColors.textPrimary,
+                          decoration: isCompleted
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          decorationColor: Colors.grey.shade400,
+                          decorationThickness: 2,
+                        ),
+                        child: Text(
+                          widget.task.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.calendar_today,
-                            size: 12, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
+                      if (widget.task.description.isNotEmpty) ...[
+                        const SizedBox(height: 3),
                         Text(
-                          task.deadline,
-                          style: const TextStyle(
-                              fontSize: 12, color: AppColors.textSecondary),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: accentColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            isCompleted ? 'Completed' : 'Pending',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: accentColor,
-                            ),
+                          widget.task.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isCompleted
+                                ? Colors.grey.shade300
+                                : AppColors.textSecondary,
                           ),
                         ),
                       ],
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 11,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.task.deadline,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                          const Spacer(),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 280),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              isCompleted ? '✅ Done' : '⏳ Pending',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: accentColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: AppColors.danger),
-                onPressed: () => _confirmDelete(context),
-              ),
-            ],
+
+                // Delete button
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.grey.shade400,
+                    size: 22,
+                  ),
+                  onPressed: () async {
+                    final confirmed = await _confirmDelete(context);
+                    if (confirmed == true) widget.onDelete();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Task'),
-        content: Text('Are you sure you want to delete "${task.title}"?'),
+  Future<bool?> _confirmDelete(BuildContext ctx) {
+    return showDialog<bool>(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text('Delete Task 🗑️'),
+        content: Text('Are you sure you want to delete\n"${widget.task.title}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              onDelete();
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Delete'),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

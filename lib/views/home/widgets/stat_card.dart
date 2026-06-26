@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/app_colors.dart';
 
 class StatCard extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
   final IconData icon;
+  final LinearGradient gradient;
 
   const StatCard({
     super.key,
@@ -13,48 +13,63 @@ class StatCard extends StatelessWidget {
     required this.count,
     required this.color,
     required this.icon,
+    required this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border(
-              top: BorderSide(color: color, width: 4),
+    return TweenAnimationBuilder<int>(
+        tween: IntTween(begin: 0, end: count),
+        duration: const Duration(milliseconds: 900),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, _) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.38),
+                  blurRadius: 14,
+                  offset: const Offset(0, 7),
+                ),
+              ],
             ),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
-              Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 22),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 10),
+                Text(
+                  '$value',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      );
   }
 }

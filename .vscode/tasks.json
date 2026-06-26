@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Pull SQLite DB from Emulator",
+      "type": "shell",
+      "command": "${env:LOCALAPPDATA}\\Android\\Sdk\\platform-tools\\adb.exe pull /data/data/com.example.flutter_application_1/databases/task_manager.db ${workspaceFolder}\\task_manager.db",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
