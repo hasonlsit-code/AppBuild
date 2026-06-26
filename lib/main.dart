@@ -10,16 +10,19 @@ import 'views/home/home_screen.dart';
 import 'views/tasks/task_list_screen.dart';
 import 'views/tasks/add_task_screen.dart';
 
-void main() => runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AuthViewModel()),
-          ChangeNotifierProvider(create: (_) => HomeViewModel()),
-          ChangeNotifierProvider(create: (_) => TaskViewModel()),
-        ],
-        child: const MyApp(),
-      ),
-    );
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => TaskViewModel()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

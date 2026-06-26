@@ -32,9 +32,9 @@ class _TaskCardState extends State<TaskCard>
       duration: const Duration(milliseconds: 350),
     );
     _bounceAnim = TweenSequence([
-      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.35), weight: 40),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.35, end: 0.9), weight: 30),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.9, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.3), weight: 40),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.3, end: 0.92), weight: 30),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.92, end: 1.0), weight: 30),
     ]).animate(CurvedAnimation(parent: _bounceCtrl, curve: Curves.easeInOut));
   }
 
@@ -50,6 +50,30 @@ class _TaskCardState extends State<TaskCard>
     widget.onToggle();
   }
 
+  void _showLockedSnackbar() {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.lock_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 10),
+            Text(
+              'Task đã hoàn thành, không thể thay đổi!',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCompleted = widget.task.isCompleted;
@@ -57,7 +81,8 @@ class _TaskCardState extends State<TaskCard>
 
     return Dismissible(
       key: ValueKey(widget.task.id),
-      direction: DismissDirection.endToStart,
+      // Tắt swipe khi đã Done
+      direction: isCompleted ? DismissDirection.none : DismissDirection.endToStart,
       background: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
@@ -90,11 +115,11 @@ class _TaskCardState extends State<TaskCard>
         duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isCompleted ? const Color(0xFFF8FAFC) : Colors.white,
+          color: isCompleted ? const Color(0xFFF1FDF7) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: accentColor.withValues(alpha: isCompleted ? 0.08 : 0.14),
+              color: accentColor.withValues(alpha: isCompleted ? 0.1 : 0.14),
               blurRadius: 14,
               offset: const Offset(0, 5),
             ),
@@ -112,48 +137,55 @@ class _TaskCardState extends State<TaskCard>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Bouncy custom checkbox
+                // Checkbox — bị khoá khi Done
                 ScaleTransition(
                   scale: _bounceAnim,
                   child: GestureDetector(
-                    onTap: _handleToggle,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 280),
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        gradient: isCompleted
-                            ? const LinearGradient(
-                                colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                    behavior: HitTestBehavior.opaque,
+                    onTap: isCompleted ? _showLockedSnackbar : _handleToggle,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 280),
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          gradient: isCompleted
+                              ? const LinearGradient(
+                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          color: isCompleted ? null : Colors.white,
+                          border: Border.all(
+                            color: isCompleted
+                                ? AppColors.success
+                                : Colors.grey.shade400,
+                            width: 2.2,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: isCompleted
+                              ? [
+                                  BoxShadow(
+                                    color:
+                                        AppColors.success.withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: isCompleted
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 18,
                               )
                             : null,
-                        color: isCompleted ? null : Colors.transparent,
-                        border: Border.all(
-                          color: isCompleted
-                              ? AppColors.success
-                              : Colors.grey.shade400,
-                          width: 2.2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: isCompleted
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.success.withValues(alpha: 0.35),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
                       ),
-                      child: isCompleted
-                          ? const Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            )
-                          : null,
                     ),
                   ),
                 ),
@@ -240,18 +272,30 @@ class _TaskCardState extends State<TaskCard>
                   ),
                 ),
 
-                // Delete button
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    color: Colors.grey.shade400,
-                    size: 22,
-                  ),
-                  onPressed: () async {
-                    final confirmed = await _confirmDelete(context);
-                    if (confirmed == true) widget.onDelete();
-                  },
-                ),
+                // Nút xoá — thay bằng icon khoá khi Done
+                isCompleted
+                    ? Tooltip(
+                        message: 'Không thể xoá task đã hoàn thành',
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.lock_rounded,
+                            color: AppColors.success,
+                            size: 20,
+                          ),
+                          onPressed: _showLockedSnackbar,
+                        ),
+                      )
+                    : IconButton(
+                        icon: Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.grey.shade400,
+                          size: 22,
+                        ),
+                        onPressed: () async {
+                          final confirmed = await _confirmDelete(context);
+                          if (confirmed == true) widget.onDelete();
+                        },
+                      ),
               ],
             ),
           ),
@@ -265,13 +309,14 @@ class _TaskCardState extends State<TaskCard>
       context: ctx,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text('Delete Task 🗑️'),
-        content: Text('Are you sure you want to delete\n"${widget.task.title}"?'),
+        title: const Text('Xoá Task 🗑️'),
+        content:
+            Text('Bạn có chắc muốn xoá\n"${widget.task.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx, false),
             child: const Text(
-              'Cancel',
+              'Huỷ',
               style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
@@ -283,7 +328,8 @@ class _TaskCardState extends State<TaskCard>
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Xoá', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

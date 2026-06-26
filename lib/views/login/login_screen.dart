@@ -14,8 +14,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(text: 'admin@gmail.com');
+  final _passwordController = TextEditingController(text: '123456');
   bool _obscurePassword = true;
 
   late AnimationController _entryController;
